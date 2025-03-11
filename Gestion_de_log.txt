@@ -1,0 +1,150 @@
+Installation de rsyslog sur les machines :
+
+	Ubuntu : sudo apt install rsyslog -y
+	Centos/Rocky : sudo dnf install rsyslog -y
+
+Manipulation rsyslog :
+	
+	sudo systemctl start rsyslog
+	sudo systemctl enable rsyslog
+	sudo systemctl status rsyslog
+	sudo systemctl restart rsyslog
+
+Changer le hostname sur Centos et Rocky :
+	
+	sudo hostnamectl set-hostname client-centos
+	sudo hostnamectl set-hostname client-rocky
+
+Mettre a jour le fichier hostname :
+
+	echo "client-centos" | sudo tee /etc/hostname
+	echo "client-rocky"  | sudo tee /etc/hostname
+
+Mettre a jour les fichiers hosts :
+
+	sudo nano /etc/hosts
+
+Changer la ligne 127.0.0.1 ou 127.0.1.1 qui contient l'ancien nom de la machine en :
+	
+	client-centos
+	client-rocky
+
+Appliquer les changements sans reboot :
+	
+	sudo systemctl restart systemd-hostnamed
+
+Vérifiez que le hostname a bien été mis à jour :
+	
+	hostnamectl
+
+Configurez rsyslog pour envoyer les logs vers le serveur Ubuntu :
+
+	sudo nano /etc/rsyslog.conf
+
+Ajouter a la fin du fichier :
+
+	# Envoi des logs au serveur Ubuntu via TCP
+	action(type="omfwd"
+       		queue.filename="forwardToUbuntu"  # Nom unique pour les fichiers de queue
+       		queue.maxdiskspace="1g"           # Limite d'espace disque pour la queue
+       		queue.saveonshutdown="on"         # Sauvegarder les logs en cas d'arrêt
+       		queue.type="LinkedList"           # Utiliser une queue en mémoire
+       		action.resumeRetryCount="-1"      # Nombre illimité de tentatives de reconnexion
+       		Target="<IP_DU_SERVEUR_UBUNTU>"   # Adresse IP du serveur Ubuntu
+       		Port="514"                        # Port TCP 514
+       		Protocol="tcp")                   # Utiliser le protocole TCP
+
+Redémarrer rsyslog par la suite
+
+Configurez rsyslog sur Ubuntu :
+
+	sudo nano /etc/rsyslog.conf
+
+Ajouter ou décommenter les lignes suivantes :
+	
+	module(load="imudp")  # Pour UDP
+	module(load="imtcp")  # Charger le module TCP
+	input(type="imtcp" port="514")  # Écouter sur le port 514
+	input(type="imudp" port="514")
+
+Configurez le stockage des logs dans /var/log/remote :
+	
+	sudo nano /etc/rsyslog.conf
+
+Ajouter a la fin du fichier : 
+
+	# Configuration du stockage des logs dans le répertoire /var/log/remote/
+	$template RemoteLogs, "/var/log/remote/%HOSTNAME%.log"
+	*.* ?RemoteLogs
+
+	# Règle pour CentOs (severity info et supérieure)
+	if $fromhost startswith 'client-centos' and $syslogseverity <= 6 then /var/log/remote/apache-centos.log
+	& stop
+	--> Filtre les logs avec une sévérité de info(6) ou supérieure
+
+	# Règle pour Rocky Linux (severity info et supérieure)
+	if $fromhost startswith 'client-rocky' and $syslogseverity <= 5 then /var/log/remote/apache-rocky.log
+	& stop
+	--> Filtre les logs avec une sévérité de notice(5) ou supérieur
+
+	# Règle pour stocker les logs d'authentification par hostname
+	$template AuthLogs, "/var/log/remote/%HOSTNAME%/auth.log
+	auth.*,authpriv.* ?AuthLogs
+
+Créer le répertoire qui stockera les logs :
+
+	sudo mkdir -p /var/log/remote
+	sudo chown Syslog:syslog /var/log/remote
+
+Redémarrer le service rsyslog
+
+Vérifier que le serveur est en écoute sur le port 514 :
+	
+	sudo ss -tuln | grep 514
+
+Sur le client Centos/Rocky envoyer les fichiers de logs :
+
+	sudo tcpdump -i eth0 port 514
+
+Vérifiez la présence des fichiers sur le serveur Ubuntu : 
+
+	ls /var/log/remote/
+	
+Vérifiez le contenu avec : 
+	
+	sudo tail -f /var/log/remote/client-rocky.log
+	sudo tail -f /var/log/remote/client-centos.log
+
+Configurez apache pour envoyer les logs via rsyslog : 
+
+	sudo nano /etc/apache2/apache2.conf
+
+Ajouter ou modifier la directive ErrorLog pour utiliser syslog :
+
+	ErrorLog Syslog:local1
+
+Redémarrer Apache :
+
+	Centos/Rocky : sudo systemctl restart httpd
+	Ubuntu : sudo systemctl restart apache2
+
+Ouvrir le fichier de configuration rsyslog :
+
+	sudo nano /etc/rsyslog.conf
+
+Ajouter les lignes suivantes :
+
+	local1.*@@<IP_SERVEUR_UBUNTU>:514
+
+Redémarrer rsyslog
+
+Vérifiez que les logs Apache sont correctement collectés :
+
+	sudo tail -f /var/log/remote/apache-centos.log
+	sudo tail -f /var/log/remote/apache-rocky.log
+
+Envoyez les logs avec :
+
+	sudo tcpdump -i eth0 port 514
+
+ 
