@@ -1,9 +1,11 @@
 # AdministrationSysteme
 
-Introduction a de l'administration système basique :
+## Introduction
 
--Création de paquet personnalisés
--Gestion de log
--Installation d'un service de métrologie
--BootPXE
--Certificat SSL
+Introduction à l'administration système basique :
+
+- Création de paquets personnalisés
+- Gestion de logs
+- Installation d'un service de métrologie
+- Boot PXE
+- Certificat SSL
