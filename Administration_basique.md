@@ -1,146 +1,157 @@
-# Ubuntu : 
+# Administration Basique
 
+## Ubuntu
+
+### Mise à jour et installation d'Apache2
+```bash
 sudo apt update
-
 sudo apt install apache2
+```
 
-Pour vérifier le fonctionnement du serveur web :
+### Vérifier le fonctionnement du serveur web
+```bash
+sudo systemctl status apache2
+```
 
-sudo systemclt status apache2
-
-hostname -I -> obtenir des addresses
-
+Obtenir les adresses IP :
+```bash
+hostname -I
+```
+Accès au serveur web :
+```
 http://your_server_ip
+```
 
-Gestion apache :
+### Gestion d'Apache
+```bash
+sudo systemctl stop apache2    # Stopper le service
+sudo systemctl start apache2   # Démarrer le service
+sudo systemctl restart apache2 # Redémarrer le service
+sudo systemctl reload apache2  # Recharger la configuration sans interrompre les connexions
+sudo systemctl disable apache2 # Désactiver le lancement automatique au démarrage
+sudo systemctl enable apache2  # Réactiver le lancement automatique
+```
 
-sudo systemctl stop apache2 -> pour stopper le service
+### Installation de MySQL ou MariaDB
+```bash
+sudo apt install mysql-server     # Installer MySQL (version 8.0 par défaut)
+sudo apt install mariadb-server   # Installer MariaDB (comme demandé dans le TP)
+```
 
-sudo systemctl start apache2 -> pour démarrer le service
+### Installation de PHP compatible avec MySQL et Apache2
+```bash
+sudo apt install php libapache2-mod-php php-mysql
+```
 
-sudo systemctl restart apache2 -> pour redémarrer le service
+### Connexion à MariaDB en tant que root
+```bash
+sudo mysql -u root -p
+```
 
-sudo systemctl reload apache2 -> Si vous procédez uniquement à des modifications de configuration, il se peut qu’Apache recharge souvent sans interrompre les connexions. 
-
-sudo systemctl disable apache2 -> Par défaut, Apache est configuré pour un lancement automatique au démarrage du serveur. Si ce n’est pas ce que vous souhaitez désactivez ce comportement
-
-sudo systemctl enable apache2 -> Pour réactiver le service de lancement automatique au démarrage
-
-sudo apt install mysql-server -> pour installer MySQL (normalement ce sera la version 8.0)
-
-				OU
-sudo apt install mariadb-server -> pour installer MariaDB comme demander dans le TP
-
-sudo apt install php libapache2-mod-php php-mysql -> pour installer un php compatible MySQL et Apache2 (normalement version 7.4)
-
-Se connecter a MariaDB en tant que root : 
-
-sudo MySQL -u root -p
-
-Créer un nouvel utilisateur et une BDD : 
-
-CREATE USER "nom_d'utilisateur"@"IP_ou_localhost" IDENTIFIED BY "mettre_un_mdp";
+### Création d'un utilisateur et d'une base de données
+```sql
+CREATE USER "nom_utilisateur"@"IP_ou_localhost" IDENTIFIED BY "mot_de_passe";
 CREATE DATABASE "nom_de_la_base";
-GRANT ALL PRIVILEGES ON "nom_de_la_base".* TO 'username'@'localhost';
+GRANT ALL PRIVILEGES ON "nom_de_la_base".* TO 'nom_utilisateur'@'localhost';
 FLUSH PRIVILEGES;
+```
 
-Installer phpmyadmin :
-
+### Installation de phpMyAdmin
+```bash
 sudo apt install phpmyadmin
-sudo ln -s /etc/phpmyAdmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
+sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
 sudo a2enconf phpMyAdmin
 sudo systemctl reload apache2
+```
 
-Accéder a phpmyadmin : 
-
+### Accès à phpMyAdmin
+```
 http://votre_adresse_ip/phpmyadmin
+```
 
-Vérifier les versions avec : 
-
+### Vérification des versions installées
+```bash
 apache2 -v
 mysql --version
 php -v
+```
 
+---
 
-Rocky :
+## Rocky Linux
 
+### Mise à jour et installation d'Apache
+```bash
 sudo dnf update
-
 sudo dnf install httpd -y
+sudo dnf install less -y   # -y permet de répondre "oui" automatiquement
+```
 
-sudo dnf install less -y
+### Gestion d'Apache
+```bash
+sudo systemctl enable httpd  # Activer Apache au démarrage
+sudo systemctl start httpd   # Démarrer Apache
+sudo systemctl status httpd  # Vérifier l'état du service
+sudo systemctl stop httpd    # Arrêter Apache
+sudo systemctl restart httpd # Redémarrer Apache
+```
 
-A savoir l'option -y c'est pour répondre a oui a toute les questions qui sont posés durant l'installation
-
-Gérer le serveur Apache :
-
-sudo systemctl enable httpd -> Enable Apache to start at system boot automatically.
-
-sudo systemctl start httpd -> Start the Apache webserver.
-
-sudo systemctl status httpd -> Check the Apache webserver status and verify it's running.
-
-sudo systemctl stop httpd -> Stop the Apache webserver.
-
-sudo systemctl restart httpd -> Restart the Apache webserver.
-
-sudo nano 000-default.conf ce qu'il faut mettre a la fin du fichier :
-
+### Configuration d'Apache (ajouter à `000-default.conf`)
+```apache
 <IfModule mod_userdir.c>
-        # Activer UserDir
-        UserDir public_html
-        UserDir disabled root
-
-        # Autoriser l'exécution de PHP dans UserDir
-        <Directory /home/*/public_html>
-                AllowOverride FileInfo AuthConfig Limit Indexes
-                Options Multiviews Indexes SymLinksIfOwnerMatch IncludesNoExec
-                # Require method GET POST OPTIONS
-                php_admin_flag engine on
-        </Directory>
+    UserDir public_html
+    UserDir disabled root
+    <Directory /home/*/public_html>
+        AllowOverride FileInfo AuthConfig Limit Indexes
+        Options Multiviews Indexes SymLinksIfOwnerMatch IncludesNoExec
+        php_admin_flag engine on
+    </Directory>
 </IfModule>
 
 <IfModule mod_php.c>
-        # Masquer les erreurs PHP
-        php_flag display_errors Off
-        php_flag log_errors On
-        php_value error_log /var/log/php_errors/log
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log /var/log/php_errors/log
 </IfModule>
+```
 
-Pour installer le paquet perso faire la commande suivante : 
+### Installation d'un paquet personnalisé
+```bash
 sudo apt install ./*.deb
+```
 
-Pour le paquet Python : 
-
+### Création d'un paquet Python
+```bash
 mkdir -p mypythonpackage/DEBIAN
 mkdir -p mypythonpackage/usr/local/bin
 
-cd /myphytonpackage/usr/local/bin
-
+cd mypythonpackage/usr/local/bin
 nano request.py
+```
 
-Mettre ceci dans le fichier : 
-
+Ajouter le contenu suivant dans `request.py` :
+```python
 #!/usr/bin/env python3
 import requests
 response = requests.get('https://api.github.com')
 print(response.json())
+```
 
-CRTL + X save yes
+Sauvegarder (`CTRL + X`, `Y`, `Enter`).
 
-Rendre le script executable : 
-
+Rendre le script exécutable :
+```bash
 chmod 755 request.py
+```
 
-cd /mypythonpackake/DEBIAN
-
+Créer le fichier `control` :
+```bash
+cd mypythonpackage/DEBIAN
 nano control
+```
 
-Mettre les droits du fichier control grâce a : 
-chmod 644 control
-
-Mettre ceci dans le fichier : 
-
+Ajouter le contenu suivant dans `control` :
+```
 Package: mypythonpackage
 Version: 1.0
 Section: base
@@ -149,26 +160,30 @@ Architecture: all
 Maintainer: Votre Nom <votre.email@example.com>
 Depends: python3, python3-requests
 Description: Un paquet avec un script Python et des dépendances
+```
 
-CRTL + X save yes
+Définir les permissions :
+```bash
+chmod 644 control
+```
 
-Se mettre a la racine donc : 
-
+Se placer à la racine :
+```bash
 cd ~/
+```
 
-Construire le paquet : 
-
+Construire le paquet :
+```bash
 dpkg-deb --build mypythonpackage
+```
 
 Installer le paquet :
-
+```bash
 sudo dpkg -i mypythonpackage.deb
+```
 
 Tester le script :
-
+```bash
 request.py
-
-
-
-
+```
 
