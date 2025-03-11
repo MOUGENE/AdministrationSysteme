@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Introduction à l'administration système basique :
+Introduction à de l'administration système basique :
 
 - Création de paquets personnalisés
 - Gestion de logs
